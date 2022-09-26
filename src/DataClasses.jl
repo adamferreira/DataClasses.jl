@@ -12,7 +12,7 @@ macro quickdataclass(T, stmts...)
     end
     # Escapes declaration so field::type does not become
     # field::DataClasses.<type> at macro resolution
-    clean_statements = [esc(stmt) for stmt in stmts]
+    local clean_statements = [esc(stmt) for stmt in stmts]
     return quote
         mutable struct $(esc(T)) <: AbstractDataClass
             # Struct parameters
@@ -29,7 +29,7 @@ macro dataclass(T, block)
     @assert block.head == :block
     # Escapes block content as it should not be resolved as belonging to DataClasses module
     # Otherwise every user types in the block will becone DataClasses.<type>
-    clean_statements = [esc(stmt) for stmt in block.args]
+    local clean_statements = [esc(stmt) for stmt in block.args]
     return quote
         mutable struct $(esc(T)) <: AbstractDataClass
             # Block content
@@ -38,6 +38,24 @@ macro dataclass(T, block)
             $(T)() = new()
         end
     end
+end
+
+#@dictdataclass Dict("class" => "MyDataClass","fields" => Dict("field1" => 10, "field2" => 1.618, "field3" => "toto"))
+# Macro to create an AbstractDataClass Structure definition from a Dict
+macro dictdataclass(d)
+    # Evaluate the dict and check it
+    local dval = eval(:($(d)))
+    @assert isa(dval, Dict{String, Any})
+    @assert haskey(dval, "class")
+    @assert isa(dval["class"], String)
+    @assert haskey(dval, "fields")
+    @assert isa(dval["fields"], Dict)
+    # Define the new DataClass type and create it
+    # List of Expr reprensting declaration of fields
+    local decls = [:($(field)::$(typeof(value))) for (field, value) in dval["fields"]]
+    println(typeof(decls))
+    #@quickdataclass(Symbol(dval["class"]), decls)
+    return :(from_dict($(esc(Symbol(dval["class"]))), $(dval["fields"])))
 end
 
 # Updates the fiels of the AbstractDataClass 'dc'
@@ -65,7 +83,7 @@ function update!(d::Dict, dc::AbstractDataClass)
 end
 
 macro update(a, b)
-    return :(update!($(esc(a)),$(esc(b))))
+    return :(update!($(esc(a)), $(esc(b))))
 end
 
 # Construct an AbstractDataClass object of type 'T' with the given Dict 'd'
@@ -95,7 +113,7 @@ Base.convert(::Type{T}, x::Dict) where T <: AbstractDataClass = from_dict(T, x)
 Base.convert(::Type{Dict}, x::T) where T <: AbstractDataClass = to_dict(x)
 
 export AbstractDataClass
-export @dataclass, @quickdataclass, @update
+export @dataclass, @quickdataclass, @dictdataclass, @update
 export from_dict, update!, to_dict
 
 end
