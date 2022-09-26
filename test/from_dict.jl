@@ -5,7 +5,6 @@ using Test
     mutable struct TestDataClass <: AbstractDataClass
         field1::Int
         field2::Float64
-    
         # Incomplete constructor pattern
         TestDataClass() = new()
     end
@@ -105,4 +104,48 @@ end
     @test data.field2 == 3.14
     @test data.field3.subfield1 == [1,2,3,4]
     @test data.field3.subfield2 == (1,2)
+end
+
+@testset "Test update from dict" begin
+    @quickdataclass TestDataClass field1::Int field2::Float64
+    data = convert(TestDataClass, Dict("field1" => 5, "field2" => 3.14))
+    @update data Dict("field2" => 1.618)
+    @test data.field1 == 5
+    @test data.field2 == 1.618
+end
+
+@testset "Test update from dict error" begin
+    @quickdataclass TestDataClass field1::Int field2::Float64
+    data = convert(TestDataClass, Dict("field1" => 5, "field2" => 3.14))
+    @test_throws(ErrorException, @update data Dict("field3" => 1.618))
+    @test data.field1 == 5
+    @test data.field2 == 3.14
+end
+
+@testset "Test update dict" begin
+    @quickdataclass TestDataClass field1::Int field2::Float64
+    data = TestDataClass()
+    data.field1 = 10
+    data.field2 = 1.618
+    d = Dict("field1" => 5, "field2" => 3.14, "field3" => "toto")
+    @update d data
+    @test d == Dict("field1" => 10, "field2" => 1.618, "field3" => "toto")
+end
+
+@testset "Test to_dict" begin
+    @quickdataclass TestDataClass2 field1::Int field2::Float64 field3::String
+    data = TestDataClass2()
+    data.field1 = 10
+    data.field2 = 1.618
+    data.field3 = "toto"
+    @test to_dict(data) == Dict("field1" => 10, "field2" => 1.618, "field3" => "toto")
+end
+
+@testset "Test convert to dict" begin
+    @quickdataclass TestDataClass2 field1::Int field2::Float64 field3::String
+    data = TestDataClass2()
+    data.field1 = 10
+    data.field2 = 1.618
+    data.field3 = "toto"
+    @test convert(Dict, data) == Dict("field1" => 10, "field2" => 1.618, "field3" => "toto")
 end
