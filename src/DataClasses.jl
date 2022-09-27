@@ -40,9 +40,9 @@ macro dataclass(T, block)
     end
 end
 
-#@dictdataclass Dict("class" => "MyDataClass","fields" => Dict("field1" => 10, "field2" => 1.618, "field3" => "toto"))
+#magicdataclass Dict("class" => "MyDataClass","fields" => Dict("field1" => 10, "field2" => 1.618, "field3" => "toto"))
 # Macro to create an AbstractDataClass Structure definition from a Dict
-macro dictdataclass(d)
+macro magicdataclass(d)
     # Evaluate the dict and check it
     local dval = eval(:($(d)))
     @assert isa(dval, Dict{String, Any})
@@ -53,7 +53,6 @@ macro dictdataclass(d)
     # Define the new DataClass type and create it
     # List of Expr reprensting declaration of fields
     local decls = [:($(field)::$(typeof(value))) for (field, value) in dval["fields"]]
-    println(typeof(decls))
     #@quickdataclass(Symbol(dval["class"]), decls)
     return :(from_dict($(esc(Symbol(dval["class"]))), $(dval["fields"])))
 end
@@ -113,7 +112,7 @@ Base.convert(::Type{T}, x::Dict) where T <: AbstractDataClass = from_dict(T, x)
 Base.convert(::Type{Dict}, x::T) where T <: AbstractDataClass = to_dict(x)
 
 export AbstractDataClass
-export @dataclass, @quickdataclass, @dictdataclass, @update
+export @dataclass, @quickdataclass, @update
 export from_dict, update!, to_dict
 
 end

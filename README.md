@@ -1,2 +1,2 @@
 # DataClasses.jl
-Data Classes
+Python-like DataClasses implementation in Julia
