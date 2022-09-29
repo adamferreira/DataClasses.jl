@@ -40,6 +40,7 @@ macro dataclass(T, block)
     end
 end
 
+
 #magicdataclass Dict("class" => "MyDataClass","fields" => Dict("field1" => 10, "field2" => 1.618, "field3" => "toto"))
 # Macro to create an AbstractDataClass Structure definition from a Dict
 macro magicdataclass(d)
@@ -81,9 +82,14 @@ function update!(d::Dict, dc::AbstractDataClass)
     end
 end
 
+
+# Equavalent to :(update!($(esc(a)), $(esc(b))))
 macro update(a, b)
-    return :(update!($(esc(a)), $(esc(b))))
+    return Expr(
+        :call, :update!, esc(a), esc(b)
+    )
 end
+
 
 # Construct an AbstractDataClass object of type 'T' with the given Dict 'd'
 function from_dict(type::Type{T}, d::Dict)::T where T <: AbstractDataClass
