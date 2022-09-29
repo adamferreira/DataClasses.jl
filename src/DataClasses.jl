@@ -27,6 +27,8 @@ end
 macro dataclass(T, block)
     # Make sure the macro is given a block as input
     @assert block.head == :block
+    # Filter declarations
+    #local decls = [stmt for stmt in block.args if (isa(stmt, Expr) && stmt.head == Symbol("::") )]
     # Escapes block content as it should not be resolved as belonging to DataClasses module
     # Otherwise every user types in the block will becone DataClasses.<type>
     local clean_statements = [esc(stmt) for stmt in block.args]
