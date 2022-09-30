@@ -3,20 +3,25 @@ import Base
 
 abstract type AbstractDataClass end
 
+# TODO : Make user choose if he wants structs to be mutable
+# help : e = Meta.parse("mutable struct TestDataClass <: AbstractDataClass TestDataClass() = new() end")
+# dump(e)
+
+
 # Macro to define an AbstractDataClass subtype with a single line
 macro quickdataclass(T, stmts...)
     # Only support attribute declaration expression in quickdataclass macro
     for stmt in stmts
         @assert isa(stmt, Expr)
-        @assert stmt.head == Symbol("::")
     end
+    local kwargs = [stmt for stmt in stmts if (isa(stmt, Expr) && stmt.head == Symbol("="))]
     # Escapes declaration so field::type does not become
     # field::DataClasses.<type> at macro resolution
-    local clean_statements = [esc(stmt) for stmt in stmts]
+    local decls = [esc(stmt) for stmt in stmts if (isa(stmt, Expr) && stmt.head == Symbol("="))]
     return quote
         mutable struct $(esc(T)) <: AbstractDataClass
             # Struct parameters
-            $(clean_statements...)
+            $(decls...)
             # Incomplete constructor pattern
             $(T)() = new()
         end
@@ -28,7 +33,7 @@ macro dataclass(T, block)
     # Make sure the macro is given a block as input
     @assert block.head == :block
     # Filter declarations
-    #local decls = [stmt for stmt in block.args if (isa(stmt, Expr) && stmt.head == Symbol("::") )]
+    #local decls = [stmt for stmt in block.args if (isa(stmt, Expr) && stmt.head == Symbol("::"))]
     # Escapes block content as it should not be resolved as belonging to DataClasses module
     # Otherwise every user types in the block will becone DataClasses.<type>
     local clean_statements = [esc(stmt) for stmt in block.args]
@@ -120,7 +125,7 @@ Base.convert(::Type{T}, x::Dict) where T <: AbstractDataClass = from_dict(T, x)
 Base.convert(::Type{Dict}, x::T) where T <: AbstractDataClass = to_dict(x)
 
 export AbstractDataClass
-export @dataclass, @quickdataclass, @update
+export @dataclass, @quickdataclass, @update, @mytest
 export from_dict, update!, to_dict
 
 end
