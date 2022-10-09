@@ -9,15 +9,10 @@ abstract type AbstractDataClass end
 
 
 # Macro to define an AbstractDataClass subtype with a single line
-macro quickdataclass(T, stmts...)
-    # Only support attribute declaration expression in quickdataclass macro
-    for stmt in stmts
-        @assert isa(stmt, Expr)
-    end
-    local kwargs = [stmt for stmt in stmts if (isa(stmt, Expr) && stmt.head == Symbol("="))]
-    # Escapes declaration so field::type does not become
+macro dataclass(T, stmts...)
+    # Filter and escapes declaration so field::type does not become
     # field::DataClasses.<type> at macro resolution
-    local decls = [esc(stmt) for stmt in stmts if (isa(stmt, Expr) && stmt.head == Symbol("="))]
+    local decls = [esc(stmt) for stmt in stmts if (isa(stmt, Expr) && stmt.head == Symbol("::"))]
     return quote
         mutable struct $(esc(T)) <: AbstractDataClass
             # Struct parameters
@@ -32,37 +27,9 @@ end
 macro dataclass(T, block)
     # Make sure the macro is given a block as input
     @assert block.head == :block
-    # Filter declarations
-    #local decls = [stmt for stmt in block.args if (isa(stmt, Expr) && stmt.head == Symbol("::"))]
-    # Escapes block content as it should not be resolved as belonging to DataClasses module
-    # Otherwise every user types in the block will becone DataClasses.<type>
-    local clean_statements = [esc(stmt) for stmt in block.args]
     return quote
-        mutable struct $(esc(T)) <: AbstractDataClass
-            # Block content
-            $(clean_statements...)
-            # Incomplete constructor pattern
-            $(T)() = new()
-        end
-    end
-end
-
-
-#magicdataclass Dict("class" => "MyDataClass","fields" => Dict("field1" => 10, "field2" => 1.618, "field3" => "toto"))
-# Macro to create an AbstractDataClass Structure definition from a Dict
-macro magicdataclass(d)
-    # Evaluate the dict and check it
-    local dval = eval(:($(d)))
-    @assert isa(dval, Dict{String, Any})
-    @assert haskey(dval, "class")
-    @assert isa(dval["class"], String)
-    @assert haskey(dval, "fields")
-    @assert isa(dval["fields"], Dict)
-    # Define the new DataClass type and create it
-    # List of Expr reprensting declaration of fields
-    local decls = [:($(field)::$(typeof(value))) for (field, value) in dval["fields"]]
-    #@quickdataclass(Symbol(dval["class"]), decls)
-    return :(from_dict($(esc(Symbol(dval["class"]))), $(dval["fields"])))
+        @dataclass $(T) $(block.args...)
+    end |> esc
 end
 
 # Updates the fiels of the AbstractDataClass 'dc'
@@ -125,7 +92,7 @@ Base.convert(::Type{T}, x::Dict) where T <: AbstractDataClass = from_dict(T, x)
 Base.convert(::Type{Dict}, x::T) where T <: AbstractDataClass = to_dict(x)
 
 export AbstractDataClass
-export @dataclass, @quickdataclass, @update, @mytest
+export @dataclass, @update
 export from_dict, update!, to_dict
 
 end

@@ -15,7 +15,7 @@ using Test
 end
 
 @testset "Quick Data Class" begin
-    @quickdataclass TestDataClass field1::Int field2::Float64
+    @dataclass TestDataClass field1::Int field2::Float64
     data = DataClasses.from_dict(TestDataClass, Dict("field1" => 5, "field2" => 3.14))
     @test data.field1 == 5
     @test data.field2 == 3.14
@@ -33,7 +33,7 @@ end
 end
 
 @testset "Using convert from dict to Data Class" begin
-    @quickdataclass TestDataClass field1::Int field2::Float64
+    @dataclass TestDataClass field1::Int field2::Float64
     data = convert(TestDataClass, Dict("field1" => 5, "field2" => 3.14))
     @test data.field1 == 5
     @test data.field2 == 3.14
@@ -83,7 +83,7 @@ end
 end
 
 @testset "Nested DataClasses from macro" begin
-    @quickdataclass TestDataClassInner subfield1::Vector{Int64} subfield2::Tuple{Int, Int}
+    @dataclass TestDataClassInner subfield1::Vector{Int64} subfield2::Tuple{Int, Int}
     @dataclass TestDataClassNested begin
         field1::Int
         field2::Float64
@@ -107,7 +107,7 @@ end
 end
 
 @testset "Test update from dict" begin
-    @quickdataclass TestDataClass field1::Int field2::Float64
+    @dataclass TestDataClass field1::Int field2::Float64
     data = convert(TestDataClass, Dict("field1" => 5, "field2" => 3.14))
     @update data Dict("field2" => 1.618)
     @test data.field1 == 5
@@ -115,7 +115,7 @@ end
 end
 
 @testset "Test update from dict error" begin
-    @quickdataclass TestDataClass field1::Int field2::Float64
+    @dataclass TestDataClass field1::Int field2::Float64
     data = convert(TestDataClass, Dict("field1" => 5, "field2" => 3.14))
     @test_throws(ErrorException, @update data Dict("field3" => 1.618))
     @test data.field1 == 5
@@ -123,7 +123,7 @@ end
 end
 
 @testset "Test update dict" begin
-    @quickdataclass TestDataClass field1::Int field2::Float64
+    @dataclass TestDataClass field1::Int field2::Float64
     data = TestDataClass()
     data.field1 = 10
     data.field2 = 1.618
@@ -133,7 +133,7 @@ end
 end
 
 @testset "Test to_dict" begin
-    @quickdataclass TestDataClass2 field1::Int field2::Float64 field3::String
+    @dataclass TestDataClass2 field1::Int field2::Float64 field3::String
     data = TestDataClass2()
     data.field1 = 10
     data.field2 = 1.618
@@ -142,7 +142,7 @@ end
 end
 
 @testset "Test convert to dict" begin
-    @quickdataclass TestDataClass2 field1::Int field2::Float64 field3::String
+    @dataclass TestDataClass2 field1::Int field2::Float64 field3::String
     data = TestDataClass2()
     data.field1 = 10
     data.field2 = 1.618
