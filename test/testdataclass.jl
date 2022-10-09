@@ -15,26 +15,26 @@ using Test
 end
 
 @testset "Quick Data Class" begin
-    @dataclass TestDataClass field1::Int field2::Float64
-    data = DataClasses.from_dict(TestDataClass, Dict("field1" => 5, "field2" => 3.14))
+    @dataclass TestQuickDataClass field1::Int field2::Float64
+    data = DataClasses.from_dict(TestQuickDataClass, Dict("field1" => 5, "field2" => 3.14))
     @test data.field1 == 5
     @test data.field2 == 3.14
 end
 
 @testset "Data Class" begin
-    @dataclass TestDataClass begin
+    @dataclass TestDataClass2 begin
         field1::Int
         field2::Float64
     end
 
-    data = DataClasses.from_dict(TestDataClass, Dict("field1" => 5, "field2" => 3.14))
+    data = DataClasses.from_dict(TestDataClass2, Dict("field1" => 5, "field2" => 3.14))
     @test data.field1 == 5
     @test data.field2 == 3.14
 end
 
 @testset "Using convert from dict to Data Class" begin
-    @dataclass TestDataClass field1::Int field2::Float64
-    data = convert(TestDataClass, Dict("field1" => 5, "field2" => 3.14))
+    @dataclass TestDataClassConvert field1::Int field2::Float64
+    data = convert(TestDataClassConvert, Dict("field1" => 5, "field2" => 3.14))
     @test data.field1 == 5
     @test data.field2 == 3.14
 end
@@ -133,8 +133,8 @@ end
 end
 
 @testset "Test to_dict" begin
-    @dataclass TestDataClass2 field1::Int field2::Float64 field3::String
-    data = TestDataClass2()
+    @dataclass TestDataClassToDict field1::Int field2::Float64 field3::String
+    data = TestDataClassToDict()
     data.field1 = 10
     data.field2 = 1.618
     data.field3 = "toto"
@@ -142,8 +142,8 @@ end
 end
 
 @testset "Test convert to dict" begin
-    @dataclass TestDataClass2 field1::Int field2::Float64 field3::String
-    data = TestDataClass2()
+    @dataclass TestDataClassToDict2 field1::Int field2::Float64 field3::String
+    data = TestDataClassToDict2()
     data.field1 = 10
     data.field2 = 1.618
     data.field3 = "toto"

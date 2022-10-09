@@ -9,18 +9,30 @@ abstract type AbstractDataClass end
 
 
 # Macro to define an AbstractDataClass subtype with a single line
-macro dataclass(T, stmts...)
+# The type is made mutable if ismutable is 'true'
+macro __dataclass(T, ismutable, stmts...)
     # Filter and escapes declaration so field::type does not become
     # field::DataClasses.<type> at macro resolution
     local decls = [esc(stmt) for stmt in stmts if (isa(stmt, Expr) && stmt.head == Symbol("::"))]
-    return quote
-        mutable struct $(esc(T)) <: AbstractDataClass
+    local block = quote
+        struct $(esc(T)) <: AbstractDataClass
             # Struct parameters
             $(decls...)
             # Incomplete constructor pattern
             $(T)() = new()
         end
     end
+    # block.args[2] is the struct definition expression
+    # block.args[2].args[1] is the boolean telling if the struct is mutable or not
+    block.args[2].args[1] = ismutable
+    return block
+end
+
+# Macro to define an AbstractDataClass subtype with a single line
+macro dataclass(T, stmts...)
+    return quote
+        @__dataclass $(T) true $(stmts...)
+    end |> esc
 end
 
 # Macro to define an AbstractDataClass subtype with a block
@@ -28,7 +40,23 @@ macro dataclass(T, block)
     # Make sure the macro is given a block as input
     @assert block.head == :block
     return quote
-        @dataclass $(T) $(block.args...)
+        @__dataclass $(T) true $(block.args...)
+    end |> esc
+end
+
+# Macro to define a mutable AbstractDataClass subtype with a single line
+macro mutable_dataclass(T, stmts...)
+    return quote
+        @__dataclass $(T) true $(stmts...)
+    end |> esc
+end
+
+# Macro to define a mutable AbstractDataClass subtype with a block
+macro mutable_dataclass(T, block)
+    # Make sure the macro is given a block as input
+    @assert block.head == :block
+    return quote
+        @__dataclass $(T) true $(block.args...)
     end |> esc
 end
 
@@ -92,7 +120,7 @@ Base.convert(::Type{T}, x::Dict) where T <: AbstractDataClass = from_dict(T, x)
 Base.convert(::Type{Dict}, x::T) where T <: AbstractDataClass = to_dict(x)
 
 export AbstractDataClass
-export @dataclass, @update
+export @__dataclass, @dataclass, @update
 export from_dict, update!, to_dict
 
 end
