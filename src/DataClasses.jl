@@ -3,29 +3,40 @@ import Base
 
 abstract type AbstractDataClass end
 
-# TODO : Make user choose if he wants structs to be mutable
-# help : e = Meta.parse("mutable struct TestDataClass <: AbstractDataClass TestDataClass() = new() end")
-# dump(e)
-
+# Default values for primitive type is Base.zero
+default(::Type{T}) where T <: Union{Number, AbstractString} = Base.zero(T)
+# Strings
+default(::Type{String}) = ""
+# Special case of tuples
+function default(::Type{T}) where T <: Tuple{Vararg}
+    return Tuple([default(param) for param in T.parameters])
+end
+# Default values for structures is the default constructor of the type
+default(::Type{T}) where T = T()
 
 # Macro to define an AbstractDataClass subtype with a single line
 # The type is made mutable if ismutable is 'true'
 macro __dataclass(T, ismutable, stmts...)
-    # Filter and escapes declaration so field::type does not become
-    # field::DataClasses.<type> at macro resolution
-    local decls = [esc(stmt) for stmt in stmts if (isa(stmt, Expr) && stmt.head == Symbol("::"))]
+    # Filter declarations, Expr of form <Var>::<Type>
+    local decls = [stmt for stmt in stmts if (isa(stmt, Expr) && stmt.head == Symbol("::"))]
+    # Create the Expr '<Var>::<Type> = default(<Type>)' that can be read by Base.@kwdef
+    # And will create the kwargs constructor <T>(; <Var>::<Type> = default(<Type>))
+    # The trick here is that we call default(<Type>) as default value for <Type>
+    # Thus default(<Type>) should be defined
+    local default_decls = [:($(decl) = DataClasses.default($(decl.args[2]))) for decl in decls]
     local block = quote
-        struct $(esc(T)) <: AbstractDataClass
-            # Struct parameters
-            $(decls...)
-            # Incomplete constructor pattern
-            $(T)() = new()
+        # Struct definition
+        struct $(T) <: DataClasses.AbstractDataClass
+            # Struct parameters (Base.@kwdef style : '<Var>::<Type> = default_value')
+            $(default_decls...)
         end
-    end
-    # block.args[2] is the struct definition expression
+    end 
+    # block.args[2] is the struct definition expression node
     # block.args[2].args[1] is the boolean telling if the struct is mutable or not
     block.args[2].args[1] = ismutable
-    return block
+
+    # Using Base.@kwdef to create kwargs constructor
+    return :(Base.@kwdef $(block.args[2])) |> esc
 end
 
 # Macro to define an AbstractDataClass subtype with a single line
@@ -96,7 +107,7 @@ end
 # Construct an AbstractDataClass object of type 'T' with the given Dict 'd'
 function from_dict(type::Type{T}, d::Dict)::T where T <: AbstractDataClass
     # First create an instance of type T
-    # TODO : Error if T ahas no empty constructor
+    # TODO : Do not instaciate here if T is not mutable
     dataclass::T = T()
     for (attr::Symbol, attrtype::DataType) in zip(fieldnames(type), fieldtypes(type))
         if haskey(d, String(attr))
@@ -119,7 +130,7 @@ end
 Base.convert(::Type{T}, x::Dict) where T <: AbstractDataClass = from_dict(T, x)
 Base.convert(::Type{Dict}, x::T) where T <: AbstractDataClass = to_dict(x)
 
-export AbstractDataClass
+export AbstractDataClass, default
 export @__dataclass, @dataclass, @update
 export from_dict, update!, to_dict
 

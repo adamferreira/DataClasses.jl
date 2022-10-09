@@ -83,11 +83,11 @@ end
 end
 
 @testset "Nested DataClasses from macro" begin
-    @dataclass TestDataClassInner subfield1::Vector{Int64} subfield2::Tuple{Int, Int}
-    @dataclass TestDataClassNested begin
+    @dataclass TestDataClassInner2 subfield1::Vector{Int64} subfield2::Tuple{Int, Int}
+    @dataclass TestDataClassNested2 begin
         field1::Int
         field2::Float64
-        field3::TestDataClassInner
+        field3::TestDataClassInner2
     end
 
     d = Dict(
@@ -99,7 +99,7 @@ end
         )
     )
 
-    data = DataClasses.from_dict(TestDataClassNested, d)
+    data = DataClasses.from_dict(TestDataClassNested2, d)
     @test data.field1 == 5
     @test data.field2 == 3.14
     @test data.field3.subfield1 == [1,2,3,4]
@@ -107,24 +107,24 @@ end
 end
 
 @testset "Test update from dict" begin
-    @dataclass TestDataClass field1::Int field2::Float64
-    data = convert(TestDataClass, Dict("field1" => 5, "field2" => 3.14))
+    @dataclass TestDataClass3 field1::Int field2::Float64
+    data = convert(TestDataClass3, Dict("field1" => 5, "field2" => 3.14))
     @update data Dict("field2" => 1.618)
     @test data.field1 == 5
     @test data.field2 == 1.618
 end
 
 @testset "Test update from dict error" begin
-    @dataclass TestDataClass field1::Int field2::Float64
-    data = convert(TestDataClass, Dict("field1" => 5, "field2" => 3.14))
+    @dataclass TestDataClass4 field1::Int field2::Float64
+    data = convert(TestDataClass4, Dict("field1" => 5, "field2" => 3.14))
     @test_throws(ErrorException, @update data Dict("field3" => 1.618))
     @test data.field1 == 5
     @test data.field2 == 3.14
 end
 
 @testset "Test update dict" begin
-    @dataclass TestDataClass field1::Int field2::Float64
-    data = TestDataClass()
+    @dataclass TestDataClass5 field1::Int field2::Float64
+    data = TestDataClass5()
     data.field1 = 10
     data.field2 = 1.618
     d = Dict("field1" => 5, "field2" => 3.14, "field3" => "toto")
