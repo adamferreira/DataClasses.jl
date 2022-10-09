@@ -1,11 +1,10 @@
 using DataClasses
 using Test
 
-@testset "From Dict Basic" begin
+@testset "Custom DataClass" begin
     mutable struct TestDataClass <: AbstractDataClass
         field1::Int
         field2::Float64
-        # Incomplete constructor pattern
         TestDataClass() = new(5, 3.14)
     end
     data = TestDataClass()
