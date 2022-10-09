@@ -8,9 +8,7 @@ default(::Type{T}) where T <: Union{Number, AbstractString} = Base.zero(T)
 # Strings
 default(::Type{String}) = ""
 # Special case of tuples
-function default(::Type{T}) where T <: Tuple{Vararg}
-    return Tuple([default(param) for param in T.parameters])
-end
+default(::Type{T}) where T <: Tuple{Vararg} = Tuple(default.(T.parameters))
 # Default values for structures is the default constructor of the type
 default(::Type{T}) where T = T()
 
@@ -42,7 +40,7 @@ end
 # Macro to define an AbstractDataClass subtype with a single line
 macro dataclass(T, stmts...)
     return quote
-        @__dataclass $(T) true $(stmts...)
+        @__dataclass $(T) false $(stmts...)
     end |> esc
 end
 
@@ -51,7 +49,7 @@ macro dataclass(T, block)
     # Make sure the macro is given a block as input
     @assert block.head == :block
     return quote
-        @__dataclass $(T) true $(block.args...)
+        @__dataclass $(T) false $(block.args...)
     end |> esc
 end
 
@@ -106,16 +104,13 @@ end
 
 # Construct an AbstractDataClass object of type 'T' with the given Dict 'd'
 function from_dict(type::Type{T}, d::Dict)::T where T <: AbstractDataClass
-    # First create an instance of type T
-    # TODO : Do not instaciate here if T is not mutable
-    dataclass::T = T()
-    for (attr::Symbol, attrtype::DataType) in zip(fieldnames(type), fieldtypes(type))
-        if haskey(d, String(attr))
-            setfield!(dataclass, attr, Base.convert(attrtype, d[String(attr)]))
-        end
-        # TODO : raise when symbol is not in dict
-    end
-    return dataclass
+    # Usage:
+    # dict = Dict(:a => 1, :b => 5, :c => 6)
+    # u = (; dict...) -----> (a = 1, b = 5, c = 6)
+    # typeof(u) -> NamedTuple{(:a, :b, :c), Tuple{Int64, Int64, Int64}}
+    kwargs = Dict(Symbol(k) => v for (k,v) in d)
+    # This implemantion of from_dict should work even if T is immutable
+    return T(; kwargs...)
 end
 
 # Construct a Dict 'd' with the given AbstractDataClass object of type 'T'
@@ -129,9 +124,11 @@ end
 # Cast overload
 Base.convert(::Type{T}, x::Dict) where T <: AbstractDataClass = from_dict(T, x)
 Base.convert(::Type{Dict}, x::T) where T <: AbstractDataClass = to_dict(x)
+# Default constructor from dict
+#(::Type{T})(x::Dict) where T <: AbstractDataClass = from_dict(T, x)
 
 export AbstractDataClass, default
-export @__dataclass, @dataclass, @update
+export @__dataclass, @dataclass, @mutable_dataclass, @update
 export from_dict, update!, to_dict
 
 end
