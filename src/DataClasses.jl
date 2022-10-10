@@ -39,34 +39,27 @@ end
 
 # Macro to define an AbstractDataClass subtype with a single line
 macro dataclass(T, stmts...)
-    return quote
-        @__dataclass $(T) false $(stmts...)
-    end |> esc
+    # Equivalent to quote @__dataclass $(T) false $(stmts...) end |> esc
+    return :(@__dataclass $(T) false $(stmts...)) |> esc
 end
 
 # Macro to define an AbstractDataClass subtype with a block
 macro dataclass(T, block)
     # Make sure the macro is given a block as input
     @assert block.head == :block
-    return quote
-        @__dataclass $(T) false $(block.args...)
-    end |> esc
+    return :(@__dataclass $(T) false $(block.args...)) |> esc
 end
 
 # Macro to define a mutable AbstractDataClass subtype with a single line
 macro mutable_dataclass(T, stmts...)
-    return quote
-        @__dataclass $(T) true $(stmts...)
-    end |> esc
+    return :(@__dataclass $(T) true $(stmts...)) |> esc
 end
 
 # Macro to define a mutable AbstractDataClass subtype with a block
 macro mutable_dataclass(T, block)
     # Make sure the macro is given a block as input
     @assert block.head == :block
-    return quote
-        @__dataclass $(T) true $(block.args...)
-    end |> esc
+    return :(@__dataclass $(T) true $(block.args...)) |> esc
 end
 
 # Updates the fiels of the AbstractDataClass 'dc'
@@ -94,7 +87,7 @@ function update!(d::Dict, dc::AbstractDataClass)
 end
 
 
-# Equavalent to :(update!($(esc(a)), $(esc(b))))
+# Equivalent to :(update!($(esc(a)), $(esc(b))))
 macro update(a, b)
     return Expr(
         :call, :update!, esc(a), esc(b)
@@ -109,7 +102,7 @@ function from_dict(type::Type{T}, d::Dict)::T where T <: AbstractDataClass
     # u = (; dict...) -----> (a = 1, b = 5, c = 6)
     # typeof(u) -> NamedTuple{(:a, :b, :c), Tuple{Int64, Int64, Int64}}
     kwargs = Dict(Symbol(k) => v for (k,v) in d)
-    # This implemantion of from_dict should work even if T is immutable
+    # This implemention of from_dict should work even if T is immutable
     return T(; kwargs...)
 end
 
@@ -125,6 +118,7 @@ end
 Base.convert(::Type{T}, x::Dict) where T <: AbstractDataClass = from_dict(T, x)
 Base.convert(::Type{Dict}, x::T) where T <: AbstractDataClass = to_dict(x)
 # Default constructor from dict
+# TODO : implement and test
 #(::Type{T})(x::Dict) where T <: AbstractDataClass = from_dict(T, x)
 
 export AbstractDataClass, default
