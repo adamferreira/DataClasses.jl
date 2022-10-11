@@ -82,10 +82,13 @@ end
 # If the field of 'dc' is not present in 'd' it will be created
 function update!(d::Dict, dc::AbstractDataClass)
     for (attr::Symbol, attrtype::DataType) in zip(fieldnames(typeof(dc)), fieldtypes(typeof(dc)))
-        d[String(attr)] = getfield(dc, attr)
+        d[String(attr)] = convert(attrtype, getfield(dc, attr))
     end
 end
 
+# Custom update operator
+(←)(x::AbstractDataClass, y::Dict) = update!(x,y)
+(←)(x::Dict, y::AbstractDataClass) = update!(x,y)
 
 # Equivalent to :(update!($(esc(a)), $(esc(b))))
 macro update(a, b)
@@ -110,19 +113,17 @@ end
 function to_dict(dc::AbstractDataClass)::Dict
     # Create an empty dict and update it
     d = Dict()
-    @update d dc
+    d ← dc
     return d
 end
 
 # Cast overload
 Base.convert(::Type{T}, x::Dict) where T <: AbstractDataClass = from_dict(T, x)
 Base.convert(::Type{Dict}, x::T) where T <: AbstractDataClass = to_dict(x)
-# Default constructor from dict
-# TODO : implement and test
-#(::Type{T})(x::Dict) where T <: AbstractDataClass = from_dict(T, x)
 
 export AbstractDataClass, default
-export @__dataclass, @dataclass, @mutable_dataclass, @update
+export ←
+export @__dataclass, @dataclass, @mutable_dataclass
 export from_dict, update!, to_dict
 
 end
