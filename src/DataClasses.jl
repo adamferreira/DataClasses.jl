@@ -15,13 +15,27 @@ default(::Type{T}) where T = T()
 # Macro to define an AbstractDataClass subtype with a single line
 # The type is made mutable if ismutable is 'true'
 macro __dataclass(T, ismutable, stmts...)
-    # Filter declarations, Expr of form <Var>::<Type>
-    local decls = [stmt for stmt in stmts if (isa(stmt, Expr) && stmt.head == Symbol("::"))]
+    # Filter statements that are not affectation
+    # An affectation if of form <var>::<Type> = <value>
+    # If the statement is of form <var>::<Type>
+    # We transform it into the default affectation Expr: <Var>::<Type> = default(<Type>)
+    # First filter out any non-Expr node (LineNumberNode, etc ...)
+    local decls = [stmt for stmt in stmts if isa(stmt, Expr)]
     # Create the Expr '<Var>::<Type> = default(<Type>)' that can be read by Base.@kwdef
     # And will create the kwargs constructor <T>(; <Var>::<Type> = default(<Type>))
     # The trick here is that we call default(<Type>) as default value for <Type>
     # Thus default(<Type>) should be defined
-    local default_decls = [:($(decl) = DataClasses.default($(decl.args[2]))) for decl in decls]
+    local default_decls = [
+        if decl.head == Symbol("::") 
+            :($(decl) = DataClasses.default($(decl.args[2])))
+        elseif decl.head == Symbol("=") 
+            decl # here decl.head == Symbol("=")
+        end # Other Expr will be ignore for class declaration
+        for decl in decls
+    ]
+
+    # Here all field declarations is of form <Var>::<Type> = default(<Type>) | <value>
+    # And will be parsed by Base.@kwdef to create the kwgars constructor
     local block = quote
         # Struct definition
         struct $(T) <: DataClasses.AbstractDataClass

@@ -97,3 +97,46 @@ end
     @test data.field2.field1 == 0.0
     @test data.field2.field2 == 3.14
 end
+
+"""
+@macroexpand @dataclass DefaultDeclarationType field1::Int field2::Float64 = 3.14 field3::Bool
+quote
+    #= util.jl:515 =#
+    begin
+        $(Expr(:meta, :doc))
+        struct DefaultDeclarationType <: DataClasses.AbstractDataClass
+            #= /home/aferreira/projects/DataClasses.jl/src/DataClasses.jl:43 =#
+            field1::Int
+            field2::Float64
+            field3::Bool
+        end
+    end
+    #= util.jl:516 =#
+    DefaultDeclarationType(; field1 = DataClasses.default(Int), field2 = 3.14, field3 = DataClasses.default(Bool)) = begin
+            #= util.jl:493 =#
+            DefaultDeclarationType(field1, field2, field3)
+        end
+end
+"""
+@testset "Test default declaration" begin
+    @dataclass DefaultDeclarationType field1::Int field2::Float64 = 3.14 field3::Bool
+    data = DefaultDeclarationType()
+    @test data.field1 == 0
+    @test data.field2 == 3.14
+    @test data.field3 == false
+end
+
+@testset "Test default declaration 2" begin
+    @dataclass DefaultDeclarationType2 begin
+        field1::Int = 100
+        field2::Float64 
+        field3::Bool = true
+        field4::Vector{Int} = [7,8]
+    end
+
+    data = DefaultDeclarationType2()
+    @test data.field1 == 100
+    @test data.field2 == 0.0
+    @test data.field3 == true
+    @test data.field4 == [7,8]
+end
