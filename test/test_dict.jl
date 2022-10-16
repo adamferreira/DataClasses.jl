@@ -70,6 +70,31 @@ end
     @test data.field3 == true
 end
 
+@testset "Test update from Iterable" begin
+    @mutable_dataclass MutableTestDataClass field1::Int field2::Float64 field3::Bool
+    data = convert(MutableTestDataClass, Dict("field1" => 5, "field2" => 3.14))
+
+    # Tuple
+    data ← (100, 1.618)
+    @test data.field1 == 100
+    @test data.field2 == 1.618
+    @test data.field3 == false
+
+    # Vector
+    data ← (5, 3.14, true)
+    @test data.field1 == 5
+    @test data.field2 == 3.14
+    @test data.field3 == true
+end
+
+@testset "Test update from Iterable error" begin
+    @mutable_dataclass MutableTestDataClass field1::Int field2::Float64 field3::Bool
+    data = convert(MutableTestDataClass, Dict("field1" => 5, "field2" => 3.14))
+
+    @test_throws UndefVarError data ← (100, 1.618, true, true)
+
+end
+
 @testset "Test update dict" begin
     @mutable_dataclass MutableTestDataClass2 field1::Int field2::Float64
     data = MutableTestDataClass2()

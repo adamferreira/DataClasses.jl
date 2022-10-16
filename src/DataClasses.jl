@@ -12,6 +12,9 @@ default(::Type{T}) where T <: Tuple{Vararg} = Tuple(default.(T.parameters))
 # Default values for structures is the default constructor of the type
 default(::Type{T}) where T = T()
 
+# Type definition for update! with non-dict classes
+Iterable = Union{Tuple{Vararg}, AbstractVector, AbstractArray}
+
 # Macro to define an AbstractDataClass subtype with a single line
 # The type is made mutable if ismutable is 'true'
 macro __dataclass(T, ismutable, stmts...)
@@ -76,7 +79,7 @@ macro mutable_dataclass(T, block)
     return :(@__dataclass $(T) true $(block.args...)) |> esc
 end
 
-# Updates the fiels of the AbstractDataClass 'dc'
+# Updates the fields of the AbstractDataClass 'dc'
 # With the given Dict 'd'
 # Any key of 'd' that is not a field of 'dc' will raise and error
 function update!(dc::AbstractDataClass, d::Dict)
@@ -86,7 +89,7 @@ function update!(dc::AbstractDataClass, d::Dict)
             setfield!(dc, Symbol(attrname), convert(typeof(field), attrval))
         else
             # TODO have specific exeption types ?
-            error("Cannot update field $attrname of type $(typeof(dc))")
+            error("Cannot update field $attrname of type $(typeof(dc)).")
         end
     end
 end
@@ -100,9 +103,23 @@ function update!(d::Dict, dc::AbstractDataClass)
     end
 end
 
+# Updates the fields of the AbstractDataClass 'dc'
+# With the values of the tuple 'vals'
+# Throws an error if 'vals' is bigger than the number of field of 'dc'
+function update!(dc::AbstractDataClass, vals::T) where T <: Iterable
+    fields = fieldnames(typeof(dc))
+    if length(vals) > length(fields)
+        errors("Trying to update $(length(vals)) fields type $(typeof(dc)) with $(length(fields)) field.")
+    end
+    for (field::Symbol, val) in zip(fields, vals)
+        setfield!(dc, field, convert(typeof(getfield(dc,field)), val))
+    end
+end
+
 # Custom update operator
 (←)(x::AbstractDataClass, y::Dict) = update!(x,y)
 (←)(x::Dict, y::AbstractDataClass) = update!(x,y)
+(←)(x::AbstractDataClass, y::T) where T <: Iterable = update!(x,y)
 
 # Equivalent to :(update!($(esc(a)), $(esc(b))))
 macro update(a, b)
